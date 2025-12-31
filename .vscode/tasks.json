@@ -55,6 +55,72 @@
 			],
 			"isBackground": true,
 			"group": "test"
+		},
+		{
+			"label": "Run Dev Server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"isBackground": true,
+			"group": "test"
+		},
+		{
+			"label": "Run Dev Server",
+			"type": "shell",
+			"command": "npm run dev",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc-watch"
+			],
+			"group": "server"
+		},
+		{
+			"label": "Run Dev Server Clean",
+			"type": "shell",
+			"command": "npm run dev",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc-watch"
+			],
+			"group": "server"
+		},
+		{
+			"label": "Run Dev Server Final",
+			"type": "shell",
+			"command": "npm run dev",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc-watch"
+			],
+			"group": "server"
+		},
+		{
+			"label": "Run Dev Server Clean Start",
+			"type": "shell",
+			"command": "npm run dev",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc-watch"
+			],
+			"group": "server"
+		},
+		{
+			"label": "Run Dev Server No Deprecation",
+			"type": "shell",
+			"command": "npm run dev",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc-watch"
+			],
+			"group": "server"
 		}
 	]
 }

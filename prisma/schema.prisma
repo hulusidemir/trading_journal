@@ -29,11 +29,15 @@ model Position {
   sl             Float?
   leverage       Float
   isCross        Boolean
+  status         String   @default("OPEN") // "OPEN", "CLOSED"
+  closedAt       DateTime?
+  exitPrice      Float?
   notes          String?
+  closeNotes     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@unique([symbol, side])
+  @@unique([symbol, side, status]) // Allow same symbol/side if one is CLOSED and other is OPEN (though usually only one OPEN)
 }
 
 model Order {

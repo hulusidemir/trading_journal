@@ -14,15 +14,20 @@ export async function syncPositions() {
     }
 
     const bybitPositions = response.result.list;
+    const activeSymbolSides = new Set<string>();
 
-    // Sync with Database
+    // 1. Sync Open Positions
     for (const pos of bybitPositions) {
       if (parseFloat(pos.size) > 0) {
+        const symbolSide = `${pos.symbol}_${pos.side === 'Buy' ? 'LONG' : 'SHORT'}`;
+        activeSymbolSides.add(symbolSide);
+
         await prisma.position.upsert({
           where: {
-            symbol_side: {
+            symbol_side_status: {
               symbol: pos.symbol,
-              side: pos.side === 'Buy' ? 'LONG' : 'SHORT'
+              side: pos.side === 'Buy' ? 'LONG' : 'SHORT',
+              status: 'OPEN'
             }
           },
           update: {
@@ -61,18 +66,67 @@ export async function syncPositions() {
             sl: pos.stopLoss ? parseFloat(pos.stopLoss) : null,
             leverage: parseFloat(pos.leverage),
             isCross: pos.tradeMode === 0,
+            status: 'OPEN'
           }
         });
-      } else {
-        // Remove closed positions
-        await prisma.position.deleteMany({
-            where: {
-                symbol: pos.symbol,
-                side: pos.side === 'Buy' ? 'LONG' : 'SHORT'
-            }
-        }).catch(() => {});
       }
     }
+
+    // 2. Handle Closed Positions
+    // Find positions in DB that are OPEN but not in the current Bybit list
+    const dbOpenPositions = await prisma.position.findMany({
+      where: { status: 'OPEN' }
+    });
+
+    for (const dbPos of dbOpenPositions) {
+      const symbolSide = `${dbPos.symbol}_${dbPos.side}`;
+      if (!activeSymbolSides.has(symbolSide)) {
+        // Position is no longer open, mark as CLOSED
+        // Fetch closure details from Bybit Closed PnL
+        const pnlResponse = await bybit.getClosedPnL({
+          category: 'linear',
+          symbol: dbPos.symbol,
+          limit: 1 // Get latest
+        });
+
+        let exitPrice = dbPos.markPrice; // Fallback
+        let closedAt = new Date();
+
+        if (pnlResponse.retCode === 0 && pnlResponse.result.list.length > 0) {
+          const lastPnl = pnlResponse.result.list[0];
+          // Verify it matches roughly
+          exitPrice = parseFloat(lastPnl.avgExitPrice);
+          closedAt = new Date(parseInt(lastPnl.updatedTime));
+          
+          await prisma.position.update({
+            where: { id: dbPos.id },
+            data: {
+              status: 'CLOSED',
+              exitPrice: exitPrice,
+              closedAt: closedAt,
+              qty: 0, // Closed
+              value: 0,
+              realizedPnl: parseFloat(lastPnl.closedPnl),
+              updatedAt: new Date()
+            }
+          });
+        } else {
+           // Fallback if PnL not found immediately
+           await prisma.position.update({
+            where: { id: dbPos.id },
+            data: {
+              status: 'CLOSED',
+              exitPrice: exitPrice,
+              closedAt: closedAt,
+              qty: 0,
+              value: 0,
+              updatedAt: new Date()
+            }
+          });
+        }
+      }
+    }
+
   } catch (error) {
     console.error('Error syncing positions:', error);
   }
@@ -80,6 +134,7 @@ export async function syncPositions() {
 
 export async function syncOrders() {
   try {
+    // 1. Sync Active Orders
     const response = await bybit.getActiveOrders({
       category: 'linear',
       settleCoin: 'USDT',
@@ -91,21 +146,7 @@ export async function syncOrders() {
     }
 
     const bybitOrders = response.result.list;
-    
-    // Get all current order IDs from DB
-    const existingOrders = await prisma.order.findMany({ select: { orderId: true } });
-    const existingOrderIds = new Set(existingOrders.map(o => o.orderId));
-    const newOrderIds = new Set(bybitOrders.map(o => o.orderId));
-
-    // Delete orders that are no longer open
-    const ordersToDelete = [...existingOrderIds].filter(id => !newOrderIds.has(id));
-    if (ordersToDelete.length > 0) {
-      await prisma.order.deleteMany({
-        where: {
-          orderId: { in: ordersToDelete }
-        }
-      });
-    }
+    const activeOrderIds = new Set(bybitOrders.map(o => o.orderId));
 
     for (const order of bybitOrders) {
       await prisma.order.upsert({
@@ -136,6 +177,42 @@ export async function syncOrders() {
         }
       });
     }
+
+    // 2. Handle Missing Orders (Filled or Cancelled)
+    const dbOpenOrders = await prisma.order.findMany({
+      where: { 
+        status: { in: ['New', 'PartiallyFilled', 'Untriggered'] }
+      }
+    });
+
+    for (const dbOrder of dbOpenOrders) {
+      if (!activeOrderIds.has(dbOrder.orderId)) {
+        // Order is no longer active, check history
+        // Note: getOrderHistory might have rate limits, be careful in loop
+        // Better to fetch history for this symbol
+        const historyResponse = await bybit.getHistoricOrders({
+          category: 'linear',
+          orderId: dbOrder.orderId,
+          limit: 1
+        });
+
+        if (historyResponse.retCode === 0 && historyResponse.result.list.length > 0) {
+          const histOrder = historyResponse.result.list[0];
+          await prisma.order.update({
+            where: { id: dbOrder.id },
+            data: {
+              status: histOrder.orderStatus,
+              filledQty: parseFloat(histOrder.cumExecQty),
+              updatedAt: new Date()
+            }
+          });
+        } else {
+            // If not found in history (rare), maybe just mark as Unknown or leave it?
+            // Or maybe it was just cancelled.
+        }
+      }
+    }
+
   } catch (error) {
     console.error('Error syncing orders:', error);
   }
