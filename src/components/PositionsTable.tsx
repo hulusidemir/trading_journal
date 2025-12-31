@@ -1,0 +1,129 @@
+'use client'
+
+import { useState } from 'react'
+import { Position } from '@prisma/client'
+import { Pencil } from 'lucide-react'
+
+export default function PositionsTable({ initialPositions }: { initialPositions: Position[] }) {
+  const [positions, setPositions] = useState(initialPositions)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [noteText, setNoteText] = useState('')
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+  }
+
+  const formatNumber = (value: number, decimals = 4) => {
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value)
+  }
+
+  const handleSaveNote = async (id: number) => {
+    try {
+      const response = await fetch(`/api/positions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: noteText })
+      })
+      
+      if (response.ok) {
+        setPositions(positions.map(p => p.id === id ? { ...p, notes: noteText } : p))
+        setEditingId(null)
+      }
+    } catch (error) {
+      console.error('Failed to save note', error)
+    }
+  }
+
+  return (
+    <div className="overflow-x-auto bg-gray-800 rounded-lg shadow">
+      <table className="w-full text-sm text-left text-gray-300">
+        <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+          <tr>
+            <th className="px-4 py-3">Contracts</th>
+            <th className="px-4 py-3">Qty</th>
+            <th className="px-4 py-3">Value</th>
+            <th className="px-4 py-3">Entry Price</th>
+            <th className="px-4 py-3">Mark Price</th>
+            <th className="px-4 py-3">Liq. Price</th>
+            <th className="px-4 py-3">IM / MM</th>
+            <th className="px-4 py-3">Unrealized P&L</th>
+            <th className="px-4 py-3">TP / SL</th>
+            <th className="px-4 py-3">Notes</th>
+            <th className="px-4 py-3">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {positions.map((position) => (
+            <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-750">
+              <td className="px-4 py-3 font-medium text-white">
+                <div className="flex flex-col">
+                  <span className={position.side === 'LONG' ? 'text-green-400' : 'text-red-400'}>
+                    {position.symbol}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {position.isCross ? 'Cross' : 'Iso'} {position.leverage.toFixed(2)}x
+                  </span>
+                </div>
+              </td>
+              <td className={`px-4 py-3 ${position.side === 'LONG' ? 'text-green-400' : 'text-red-400'}`}>
+                {position.qty.toLocaleString()} {position.symbol.replace('USDT', '')}
+              </td>
+              <td className="px-4 py-3">{formatCurrency(position.value)}</td>
+              <td className="px-4 py-3">{formatNumber(position.entryPrice)}</td>
+              <td className="px-4 py-3">{formatNumber(position.markPrice)}</td>
+              <td className="px-4 py-3 text-orange-400">{position.liqPrice ? formatNumber(position.liqPrice) : '--'}</td>
+              <td className="px-4 py-3">
+                <div className="flex flex-col">
+                  <span>{formatNumber(position.im || 0, 2)}</span>
+                  <span className="text-xs text-gray-500">{formatNumber(position.mm || 0, 2)}</span>
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex flex-col">
+                  <span className={position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}>
+                    {formatNumber(position.unrealizedPnl, 2)} USDT
+                  </span>
+                  <span className={`text-xs ${position.unrealizedRoi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ({position.unrealizedRoi.toFixed(2)}%)
+                  </span>
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex flex-col text-xs">
+                  <span className="text-green-400">TP: {position.tp ? formatNumber(position.tp) : '--'}</span>
+                  <span className="text-red-400">SL: {position.sl ? formatNumber(position.sl) : '--'}</span>
+                </div>
+              </td>
+              <td className="px-4 py-3 max-w-xs truncate">
+                {editingId === position.id ? (
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={noteText} 
+                      onChange={(e) => setNoteText(e.target.value)}
+                      className="bg-gray-700 text-white px-2 py-1 rounded text-xs w-full"
+                    />
+                    <button onClick={() => handleSaveNote(position.id)} className="text-green-400 text-xs">Save</button>
+                  </div>
+                ) : (
+                  <span className="text-gray-400 italic">{position.notes || 'No notes'}</span>
+                )}
+              </td>
+              <td className="px-4 py-3">
+                <button 
+                  onClick={() => {
+                    setEditingId(position.id)
+                    setNoteText(position.notes || '')
+                  }}
+                  className="p-1 hover:bg-gray-700 rounded"
+                >
+                  <Pencil size={16} className="text-gray-400" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}

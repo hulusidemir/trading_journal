@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Position {
+  id             Int      @id @default(autoincrement())
+  symbol         String
+  side           String   // "LONG" or "SHORT"
+  qty            Float
+  value          Float
+  entryPrice     Float
+  markPrice      Float
+  liqPrice       Float?
+  breakEvenPrice Float?
+  im             Float?
+  mm             Float?
+  unrealizedPnl  Float
+  unrealizedRoi  Float
+  realizedPnl    Float
+  tp             Float?
+  sl             Float?
+  leverage       Float
+  isCross        Boolean
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([symbol, side])
+}
+
+model Order {
+  id           Int      @id @default(autoincrement())
+  orderId      String   @unique
+  symbol       String
+  type         String   // "Limit", "Market", "Trigger"
+  side         String   // "Buy", "Sell"
+  price        Float
+  qty          Float
+  filledQty    Float    @default(0)
+  triggerPrice Float?
+  isReduceOnly Boolean  @default(false)
+  status       String   // "Open", "Filled", "Cancelled"
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model JournalEntry {
+  id        Int      @id @default(autoincrement())
+  title     String?
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
