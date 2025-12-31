@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { Position } from '@prisma/client'
 import { Pencil } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function PositionsTable({ initialPositions }: { initialPositions: Position[] }) {
+  const { t } = useLanguage()
   const [positions, setPositions] = useState(initialPositions)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [noteText, setNoteText] = useState('')
@@ -15,6 +17,10 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
 
   const formatNumber = (value: number, decimals = 4) => {
     return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value)
+  }
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
   }
 
   const handleSaveNote = async (id: number) => {
@@ -39,22 +45,24 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
       <table className="w-full text-sm text-left text-gray-300">
         <thead className="text-xs text-gray-400 uppercase bg-gray-700">
           <tr>
-            <th className="px-4 py-3">Contracts</th>
-            <th className="px-4 py-3">Qty</th>
-            <th className="px-4 py-3">Value</th>
-            <th className="px-4 py-3">Entry Price</th>
-            <th className="px-4 py-3">Mark Price</th>
-            <th className="px-4 py-3">Liq. Price</th>
-            <th className="px-4 py-3">IM / MM</th>
-            <th className="px-4 py-3">Unrealized P&L</th>
-            <th className="px-4 py-3">TP / SL</th>
-            <th className="px-4 py-3">Notes</th>
-            <th className="px-4 py-3">Action</th>
+            <th className="px-4 py-3">{t.table.date}</th>
+            <th className="px-4 py-3">{t.table.contracts}</th>
+            <th className="px-4 py-3">{t.table.qty}</th>
+            <th className="px-4 py-3">{t.table.value}</th>
+            <th className="px-4 py-3">{t.table.entryPrice}</th>
+            <th className="px-4 py-3">{t.table.markPrice}</th>
+            <th className="px-4 py-3">{t.table.liqPrice}</th>
+            <th className="px-4 py-3">{t.table.imMm}</th>
+            <th className="px-4 py-3">{t.table.unrealizedPnl}</th>
+            <th className="px-4 py-3">{t.table.tpSl}</th>
+            <th className="px-4 py-3">{t.table.notes}</th>
+            <th className="px-4 py-3">{t.table.action}</th>
           </tr>
         </thead>
         <tbody>
           {positions.map((position) => (
             <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-750">
+              <td className="px-4 py-3 text-gray-400">{formatDate(position.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">
                 <div className="flex flex-col">
                   <span className={position.side === 'LONG' ? 'text-green-400' : 'text-red-400'}>
@@ -103,10 +111,10 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
                       onChange={(e) => setNoteText(e.target.value)}
                       className="bg-gray-700 text-white px-2 py-1 rounded text-xs w-full"
                     />
-                    <button onClick={() => handleSaveNote(position.id)} className="text-green-400 text-xs">Save</button>
+                    <button onClick={() => handleSaveNote(position.id)} className="text-green-400 text-xs">{t.table.save}</button>
                   </div>
                 ) : (
-                  <span className="text-gray-400 italic">{position.notes || 'No notes'}</span>
+                  <span className="text-gray-400 italic">{position.notes || t.table.noNotes}</span>
                 )}
               </td>
               <td className="px-4 py-3">

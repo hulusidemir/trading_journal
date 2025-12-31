@@ -15,6 +15,11 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 - **Note Taking**: Add custom notes to both open and closed positions to review your strategy later.
 - **Order History**: Keep a record of all filled and cancelled orders.
 
+### 🌍 Localization & UI
+- **Multi-language Support**: Switch instantly between English (🇬🇧) and Turkish (🇹🇷).
+- **Date Formatting**: Clear, concise date display (DD/MM) for all entries.
+- **Responsive Design**: Optimized for various screen sizes.
+
 ### 🛠 Technical Highlights
 - **Auto-Sync**: Intelligent background synchronization with Bybit API.
 - **Data Persistence**: SQLite database ensures your journal data (notes, history) is never lost, even if the exchange clears old data.

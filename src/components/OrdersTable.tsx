@@ -3,14 +3,20 @@
 import { useState } from 'react'
 import { Order } from '@prisma/client'
 import { Pencil } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function OrdersTable({ initialOrders }: { initialOrders: Order[] }) {
+  const { t } = useLanguage()
   const [orders, setOrders] = useState(initialOrders)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [noteText, setNoteText] = useState('')
 
   const formatNumber = (value: number, decimals = 4) => {
     return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value)
+  }
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
   }
 
   const handleSaveNote = async (id: number) => {
@@ -35,22 +41,24 @@ export default function OrdersTable({ initialOrders }: { initialOrders: Order[] 
       <table className="w-full text-sm text-left text-gray-300">
         <thead className="text-xs text-gray-400 uppercase bg-gray-700">
           <tr>
-            <th className="px-4 py-3">Symbol</th>
-            <th className="px-4 py-3">Type</th>
-            <th className="px-4 py-3">Side</th>
-            <th className="px-4 py-3">Price</th>
-            <th className="px-4 py-3">Qty</th>
-            <th className="px-4 py-3">Filled</th>
-            <th className="px-4 py-3">Trigger</th>
-            <th className="px-4 py-3">Reduce Only</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Notes</th>
-            <th className="px-4 py-3">Action</th>
+            <th className="px-4 py-3">{t.table.date}</th>
+            <th className="px-4 py-3">{t.table.symbol}</th>
+            <th className="px-4 py-3">{t.table.type}</th>
+            <th className="px-4 py-3">{t.table.side}</th>
+            <th className="px-4 py-3">{t.table.price}</th>
+            <th className="px-4 py-3">{t.table.qty}</th>
+            <th className="px-4 py-3">{t.table.filled}</th>
+            <th className="px-4 py-3">{t.table.trigger}</th>
+            <th className="px-4 py-3">{t.table.reduceOnly}</th>
+            <th className="px-4 py-3">{t.table.status}</th>
+            <th className="px-4 py-3">{t.table.notes}</th>
+            <th className="px-4 py-3">{t.table.action}</th>
           </tr>
         </thead>
         <tbody>
           {orders.map((order) => (
             <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-750">
+              <td className="px-4 py-3 text-gray-400">{formatDate(order.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">{order.symbol}</td>
               <td className="px-4 py-3">{order.type}</td>
               <td className={`px-4 py-3 ${order.side === 'Buy' ? 'text-green-400' : 'text-red-400'}`}>
@@ -82,10 +90,10 @@ export default function OrdersTable({ initialOrders }: { initialOrders: Order[] 
                       onChange={(e) => setNoteText(e.target.value)}
                       className="bg-gray-700 text-white px-2 py-1 rounded text-xs w-full"
                     />
-                    <button onClick={() => handleSaveNote(order.id)} className="text-green-400 text-xs">Save</button>
+                    <button onClick={() => handleSaveNote(order.id)} className="text-green-400 text-xs">{t.table.save}</button>
                   </div>
                 ) : (
-                  <span className="text-gray-400 italic">{order.notes || 'No notes'}</span>
+                  <span className="text-gray-400 italic">{order.notes || t.table.noNotes}</span>
                 )}
               </td>
               <td className="px-4 py-3">
