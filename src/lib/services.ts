@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/db'
-import { bybit } from '@/lib/bybit'
+import { getBybitClient } from '@/lib/bybit'
 
 export async function syncPositions() {
   try {
+    const bybit = getBybitClient();
     const response = await bybit.getPositionInfo({
       category: 'linear',
       settleCoin: 'USDT',
@@ -83,7 +84,7 @@ export async function syncPositions() {
     }
 
     // 2. Sync Recent Closed PnL (Handles both Full and Partial Closes)
-    const pnlResponse = await bybit.getClosedPnL({
+    const pnlResponse = await getBybitClient().getClosedPnL({
       category: 'linear',
       limit: 50 // Fetch last 50 closed trades to catch everything
     });
@@ -193,6 +194,7 @@ export async function syncPositions() {
 
 export async function syncOrders() {
   try {
+    const bybit = getBybitClient();
     // 1. Sync Active Orders
     const response = await bybit.getActiveOrders({
       category: 'linear',
@@ -249,7 +251,7 @@ export async function syncOrders() {
         // Order is no longer active, check history
         // Note: getOrderHistory might have rate limits, be careful in loop
         // Better to fetch history for this symbol
-        const historyResponse = await bybit.getHistoricOrders({
+        const historyResponse = await getBybitClient().getHistoricOrders({
           category: 'linear',
           orderId: dbOrder.orderId,
           limit: 1
