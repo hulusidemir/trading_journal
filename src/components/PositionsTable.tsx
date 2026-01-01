@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Position } from '@prisma/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import Pagination from './Pagination'
+import Tooltip from './Tooltip'
 
 export default function PositionsTable({ 
   initialPositions, 
@@ -65,7 +66,7 @@ export default function PositionsTable({
         </thead>
         <tbody>
           {currentPositions.map((position) => (
-            <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-750">
+            <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-700 transition-colors duration-150">
               <td className="px-4 py-3 text-gray-400">{formatDate(position.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">
                 <div className="flex flex-col">
@@ -106,8 +107,10 @@ export default function PositionsTable({
                   <span className="text-red-400">SL: {position.sl ? formatNumber(position.sl) : '--'}</span>
                 </div>
               </td>
-              <td className="px-4 py-3 max-w-xs truncate">
-                <span className="text-gray-400 italic">{position.notes || t.table.noNotes}</span>
+              <td className="px-4 py-3 max-w-[200px]">
+                <Tooltip text={position.notes || ''}>
+                  <span className="text-gray-400 italic truncate block cursor-help">{position.notes || t.table.noNotes}</span>
+                </Tooltip>
               </td>
             </tr>
           ))}

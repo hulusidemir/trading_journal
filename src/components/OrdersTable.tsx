@@ -5,6 +5,7 @@ import { Order } from '@prisma/client'
 import { Pencil } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import Pagination from './Pagination'
+import Tooltip from './Tooltip'
 
 export default function OrdersTable({ 
   initialOrders, 
@@ -79,14 +80,13 @@ export default function OrdersTable({
             <th className="px-4 py-3">{t.table.filled}</th>
             <th className="px-4 py-3">{t.table.trigger}</th>
             <th className="px-4 py-3">{t.table.reduceOnly}</th>
-            <th className="px-4 py-3">{t.table.status}</th>
             <th className="px-4 py-3">{t.table.notes}</th>
             <th className="px-4 py-3">{t.table.action}</th>
           </tr>
         </thead>
         <tbody>
           {currentOrders.map((order) => (
-            <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-750">
+            <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-700 transition-colors duration-150">
               <td className="px-4 py-3 text-gray-400">{formatDate(order.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">{order.symbol}</td>
               <td className="px-4 py-3">{order.type}</td>
@@ -102,15 +102,7 @@ export default function OrdersTable({
               <td className="px-4 py-3">
                 {order.isReduceOnly ? <span className="text-yellow-400">Yes</span> : 'No'}
               </td>
-              <td className="px-4 py-3">
-                <span className={`px-2 py-1 rounded text-xs ${
-                  order.status === 'Open' ? 'bg-green-900 text-green-300' : 
-                  order.status === 'Filled' ? 'bg-blue-900 text-blue-300' : 'bg-gray-700'
-                }`}>
-                  {order.status}
-                </span>
-              </td>
-              <td className="px-4 py-3 max-w-xs truncate">
+              <td className="px-4 py-3 max-w-[200px]">
                 {editingId === order.id ? (
                   <div className="flex gap-2">
                     <input 
@@ -122,7 +114,9 @@ export default function OrdersTable({
                     <button onClick={() => handleSaveNote(order.id)} className="text-green-400 text-xs">{t.table.save}</button>
                   </div>
                 ) : (
-                  <span className="text-gray-400 italic">{order.notes || t.table.noNotes}</span>
+                  <Tooltip text={order.notes || ''}>
+                    <span className="text-gray-400 italic truncate block cursor-help">{order.notes || t.table.noNotes}</span>
+                  </Tooltip>
                 )}
               </td>
               <td className="px-4 py-3">

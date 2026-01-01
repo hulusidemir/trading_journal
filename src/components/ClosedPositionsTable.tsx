@@ -5,6 +5,7 @@ import { Position } from '@prisma/client'
 import { Pencil } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import Pagination from './Pagination'
+import Tooltip from './Tooltip'
 
 interface ClosedPositionsTableProps {
   initialPositions: Position[]
@@ -78,7 +79,7 @@ export default function ClosedPositionsTable({ initialPositions, currency = 'USD
         </thead>
         <tbody>
           {currentPositions.map((position) => (
-            <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-750">
+            <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-700 transition-colors duration-150">
               <td className="px-4 py-3 font-medium text-white">
                 <div className="flex flex-col">
                   <span className={position.side === 'LONG' ? 'text-green-400' : 'text-red-400'}>
@@ -99,7 +100,7 @@ export default function ClosedPositionsTable({ initialPositions, currency = 'USD
               <td className="px-4 py-3 text-xs text-gray-400">
                 {formatDate(position.closedAt)}
               </td>
-              <td className="px-4 py-3 max-w-xs truncate">
+              <td className="px-4 py-3 max-w-[200px]">
                 {editingId === position.id ? (
                   <div className="flex gap-2">
                     <input 
@@ -111,7 +112,9 @@ export default function ClosedPositionsTable({ initialPositions, currency = 'USD
                     <button onClick={() => handleSaveNote(position.id)} className="text-green-400 text-xs">{t.table.save}</button>
                   </div>
                 ) : (
-                  <span className="text-gray-400 italic">{position.notes || t.table.noNotes}</span>
+                  <Tooltip text={position.notes || ''}>
+                    <span className="text-gray-400 italic truncate block cursor-help">{position.notes || t.table.noNotes}</span>
+                  </Tooltip>
                 )}
               </td>
               <td className="px-4 py-3">
