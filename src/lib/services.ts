@@ -19,56 +19,66 @@ export async function syncPositions() {
     // 1. Sync Open Positions
     for (const pos of bybitPositions) {
       if (parseFloat(pos.size) > 0) {
-        const symbolSide = `${pos.symbol}_${pos.side === 'Buy' ? 'LONG' : 'SHORT'}`;
+        const side = pos.side === 'Buy' ? 'LONG' : 'SHORT';
+        const symbolSide = `${pos.symbol}_${side}`;
         activeSymbolSides.add(symbolSide);
 
-        await prisma.position.upsert({
+        // Find existing OPEN position
+        const existingPos = await prisma.position.findFirst({
           where: {
-            symbol_side_status: {
-              symbol: pos.symbol,
-              side: pos.side === 'Buy' ? 'LONG' : 'SHORT',
-              status: 'OPEN'
-            }
-          },
-          update: {
-            qty: parseFloat(pos.size),
-            value: parseFloat(pos.positionValue),
-            entryPrice: parseFloat(pos.avgPrice),
-            markPrice: parseFloat(pos.markPrice),
-            liqPrice: pos.liqPrice ? parseFloat(pos.liqPrice) : null,
-            breakEvenPrice: parseFloat(pos.avgPrice),
-            im: parseFloat(pos.positionIM || '0'),
-            mm: parseFloat(pos.positionMM || '0'),
-            unrealizedPnl: parseFloat(pos.unrealisedPnl),
-            unrealizedRoi: parseFloat(pos.unrealisedPnl) / parseFloat(pos.positionIM || '1') * 100,
-            realizedPnl: parseFloat(pos.cumRealisedPnl),
-            tp: pos.takeProfit ? parseFloat(pos.takeProfit) : null,
-            sl: pos.stopLoss ? parseFloat(pos.stopLoss) : null,
-            leverage: parseFloat(pos.leverage),
-            isCross: pos.tradeMode === 0,
-            updatedAt: new Date()
-          },
-          create: {
             symbol: pos.symbol,
-            side: pos.side === 'Buy' ? 'LONG' : 'SHORT',
-            qty: parseFloat(pos.size),
-            value: parseFloat(pos.positionValue),
-            entryPrice: parseFloat(pos.avgPrice),
-            markPrice: parseFloat(pos.markPrice),
-            liqPrice: pos.liqPrice ? parseFloat(pos.liqPrice) : null,
-            breakEvenPrice: parseFloat(pos.avgPrice),
-            im: parseFloat(pos.positionIM || '0'),
-            mm: parseFloat(pos.positionMM || '0'),
-            unrealizedPnl: parseFloat(pos.unrealisedPnl),
-            unrealizedRoi: parseFloat(pos.unrealisedPnl) / parseFloat(pos.positionIM || '1') * 100,
-            realizedPnl: parseFloat(pos.cumRealisedPnl),
-            tp: pos.takeProfit ? parseFloat(pos.takeProfit) : null,
-            sl: pos.stopLoss ? parseFloat(pos.stopLoss) : null,
-            leverage: parseFloat(pos.leverage),
-            isCross: pos.tradeMode === 0,
+            side: side,
             status: 'OPEN'
           }
         });
+
+        const data = {
+          symbol: pos.symbol,
+          side: side,
+          qty: parseFloat(pos.size),
+          value: parseFloat(pos.positionValue),
+          entryPrice: parseFloat(pos.avgPrice),
+          markPrice: parseFloat(pos.markPrice),
+          liqPrice: pos.liqPrice ? parseFloat(pos.liqPrice) : null,
+          breakEvenPrice: parseFloat(pos.avgPrice),
+          im: parseFloat(pos.positionIM || '0'),
+          mm: parseFloat(pos.positionMM || '0'),
+          unrealizedPnl: parseFloat(pos.unrealisedPnl),
+          unrealizedRoi: parseFloat(pos.unrealisedPnl) / parseFloat(pos.positionIM || '1') * 100,
+          realizedPnl: parseFloat(pos.cumRealisedPnl),
+          tp: pos.takeProfit ? parseFloat(pos.takeProfit) : null,
+          sl: pos.stopLoss ? parseFloat(pos.stopLoss) : null,
+          leverage: parseFloat(pos.leverage || '0'),
+          isCross: pos.tradeMode === 0,
+          status: 'OPEN',
+          updatedAt: new Date(),
+          notes: undefined as string | undefined | null
+        };
+
+        if (existingPos) {
+          await prisma.position.update({
+            where: { id: existingPos.id },
+            data: data
+          });
+        } else {
+          // Try to find a matching order with notes to inherit
+          const matchingOrder = await prisma.order.findFirst({
+            where: {
+              symbol: pos.symbol,
+              side: pos.side, // 'Buy' or 'Sell' matches Order side
+              notes: { not: null }
+            },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          if (matchingOrder?.notes) {
+            data.notes = matchingOrder.notes;
+          }
+
+          await prisma.position.create({
+            data: data
+          });
+        }
       }
     }
 
@@ -125,6 +135,56 @@ export async function syncPositions() {
           });
         }
       }
+    }
+
+    // 3. Sync Historical Closed Positions (Initial Population)
+    // Only run if DB has very few closed positions to avoid spamming API
+    const closedCount = await prisma.position.count({ where: { status: 'CLOSED' } });
+    if (closedCount < 5) {
+       const historyResponse = await bybit.getClosedPnL({
+          category: 'linear',
+          limit: 20 // Fetch last 20 closed trades
+       });
+
+       if (historyResponse.retCode === 0) {
+          for (const item of historyResponse.result.list) {
+             const closedAt = new Date(parseInt(item.updatedTime));
+             
+             // Check if this specific closed trade exists
+             // Since we don't have a unique ID from Bybit for the position itself (only orderId), 
+             // we use a heuristic: same symbol, side, and close time matching exactly
+             const exists = await prisma.position.findFirst({
+                where: {
+                   symbol: item.symbol,
+                   side: item.side === 'Buy' ? 'LONG' : 'SHORT',
+                   status: 'CLOSED',
+                   closedAt: closedAt
+                }
+             });
+
+             if (!exists) {
+                await prisma.position.create({
+                   data: {
+                      symbol: item.symbol,
+                      side: item.side === 'Buy' ? 'LONG' : 'SHORT',
+                      qty: parseFloat(item.qty),
+                      value: parseFloat(item.cumEntryValue), // Approx
+                      entryPrice: parseFloat(item.avgEntryPrice),
+                      markPrice: parseFloat(item.avgExitPrice), // Use exit as mark for closed
+                      exitPrice: parseFloat(item.avgExitPrice),
+                      realizedPnl: parseFloat(item.closedPnl),
+                      closedAt: closedAt,
+                      status: 'CLOSED',
+                      leverage: parseFloat(item.leverage),
+                      isCross: true, // Default assumption if not provided
+                      unrealizedPnl: 0,
+                      unrealizedRoi: 0,
+                      updatedAt: new Date()
+                   }
+                });
+             }
+          }
+       }
     }
 
   } catch (error) {

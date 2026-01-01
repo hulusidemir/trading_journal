@@ -1,21 +1,39 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Position, Order } from '@prisma/client'
+import { RefreshCw } from 'lucide-react'
 import PositionsTable from '@/components/PositionsTable'
 import ClosedPositionsTable from '@/components/ClosedPositionsTable'
 import OrdersTable from '@/components/OrdersTable'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+import { refreshData } from '@/app/actions'
+
 interface DashboardProps {
   openPositions: Position[]
   closedPositions: Position[]
   openOrders: Order[]
-  historyOrders: Order[]
 }
 
-export default function Dashboard({ openPositions, closedPositions, openOrders, historyOrders }: DashboardProps) {
+export default function Dashboard({ openPositions, closedPositions, openOrders }: DashboardProps) {
   const { t } = useLanguage()
+  const router = useRouter()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshData()
+      // Force a hard reload to ensure data is fresh
+      window.location.reload()
+    } catch (error) {
+      console.error('Refresh failed:', error)
+      setIsRefreshing(false)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-gray-900 text-gray-100 p-6">
@@ -23,6 +41,14 @@ export default function Dashboard({ openPositions, closedPositions, openOrders, 
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-white">{t.title}</h1>
           <LanguageSwitcher />
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-all text-gray-300 hover:text-white flex items-center gap-2 border border-gray-700 hover:border-gray-600"
+            title="Sync with Bybit"
+          >
+            <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
         </div>
         <div className="text-sm text-gray-400">
           {t.stats.replace('{posCount}', openPositions.length.toString()).replace('{orderCount}', openOrders.length.toString())}
@@ -36,13 +62,6 @@ export default function Dashboard({ openPositions, closedPositions, openOrders, 
           </div>
           <PositionsTable initialPositions={openPositions} />
         </section>
-
-        <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white border-b-2 border-gray-500 pb-1 inline-block">{t.closedPositions}</h2>
-          </div>
-          <ClosedPositionsTable initialPositions={closedPositions} />
-        </section>
         
         <section>
           <div className="flex justify-between items-center mb-4">
@@ -53,9 +72,9 @@ export default function Dashboard({ openPositions, closedPositions, openOrders, 
 
         <section>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white border-b-2 border-gray-500 pb-1 inline-block">{t.orderHistory}</h2>
+            <h2 className="text-xl font-semibold text-white border-b-2 border-gray-500 pb-1 inline-block">{t.closedPositions}</h2>
           </div>
-          <OrdersTable initialOrders={historyOrders} />
+          <ClosedPositionsTable initialPositions={closedPositions} />
         </section>
       </div>
 

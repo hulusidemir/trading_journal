@@ -4,12 +4,21 @@ import { useState } from 'react'
 import { Order } from '@prisma/client'
 import { Pencil } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import Pagination from './Pagination'
 
 export default function OrdersTable({ initialOrders }: { initialOrders: Order[] }) {
   const { t } = useLanguage()
   const [orders, setOrders] = useState(initialOrders)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [noteText, setNoteText] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  const totalPages = Math.ceil(orders.length / itemsPerPage)
+  const currentOrders = orders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const formatNumber = (value: number, decimals = 4) => {
     return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value)
@@ -56,7 +65,7 @@ export default function OrdersTable({ initialOrders }: { initialOrders: Order[] 
           </tr>
         </thead>
         <tbody>
-          {orders.map((order) => (
+          {currentOrders.map((order) => (
             <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-750">
               <td className="px-4 py-3 text-gray-400">{formatDate(order.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">{order.symbol}</td>
@@ -111,6 +120,11 @@ export default function OrdersTable({ initialOrders }: { initialOrders: Order[] 
           ))}
         </tbody>
       </table>
+      <Pagination 
+        currentPage={currentPage} 
+        totalPages={totalPages} 
+        onPageChange={setCurrentPage} 
+      />
     </div>
   )
 }

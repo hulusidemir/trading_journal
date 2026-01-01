@@ -4,12 +4,21 @@ import { useState } from 'react'
 import { Position } from '@prisma/client'
 import { Pencil } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import Pagination from './Pagination'
 
 export default function PositionsTable({ initialPositions }: { initialPositions: Position[] }) {
   const { t } = useLanguage()
   const [positions, setPositions] = useState(initialPositions)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [noteText, setNoteText] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  const totalPages = Math.ceil(positions.length / itemsPerPage)
+  const currentPositions = positions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
@@ -60,7 +69,7 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
           </tr>
         </thead>
         <tbody>
-          {positions.map((position) => (
+          {currentPositions.map((position) => (
             <tr key={position.id} className="border-b border-gray-700 hover:bg-gray-750">
               <td className="px-4 py-3 text-gray-400">{formatDate(position.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">
@@ -132,6 +141,11 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
           ))}
         </tbody>
       </table>
+      <Pagination 
+        currentPage={currentPage} 
+        totalPages={totalPages} 
+        onPageChange={setCurrentPage} 
+      />
     </div>
   )
 }

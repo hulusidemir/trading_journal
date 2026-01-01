@@ -37,7 +37,8 @@ model Position {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@unique([symbol, side, status]) // Allow same symbol/side if one is CLOSED and other is OPEN (though usually only one OPEN)
+  // Removed unique constraint to allow multiple CLOSED positions for the same symbol/side
+  // We will handle OPEN position uniqueness in the application logic
 }
 
 model Order {

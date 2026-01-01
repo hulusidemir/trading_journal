@@ -97,6 +97,7 @@ async function main() {
   await prisma.order.createMany({
     data: [
       {
+        orderId: 'mock-order-1',
         symbol: 'LIGHTUSDT',
         type: 'Limit',
         side: 'Buy',
@@ -106,6 +107,7 @@ async function main() {
         notes: 'Take profit target 1'
       },
       {
+        orderId: 'mock-order-2',
         symbol: 'ADAUSDT',
         type: 'Trigger',
         side: 'Sell',

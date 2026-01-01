@@ -17,6 +17,7 @@ export const translations = {
       qty: 'Qty',
       value: 'Value',
       entryPrice: 'Entry Price',
+      price: 'Price',
       markPrice: 'Mark Price',
       liqPrice: 'Liq. Price',
       imMm: 'IM / MM',
@@ -33,7 +34,10 @@ export const translations = {
       status: 'Status',
       save: 'Save',
       noNotes: 'No notes',
-      noClosedPositions: 'No closed positions found'
+      noClosedPositions: 'No closed positions found',
+      previous: 'Previous',
+      next: 'Next',
+      page: 'Page {current} of {total}'
     }
   },
   tr: {
@@ -52,6 +56,7 @@ export const translations = {
       qty: 'Miktar',
       value: 'Değer',
       entryPrice: 'Giriş Fiyatı',
+      price: 'Fiyat',
       markPrice: 'Mark Fiyatı',
       liqPrice: 'Lik. Fiyatı',
       imMm: 'IM / MM',
@@ -68,7 +73,10 @@ export const translations = {
       status: 'Durum',
       save: 'Kaydet',
       noNotes: 'Not yok',
-      noClosedPositions: 'Kapanmış pozisyon bulunamadı'
+      noClosedPositions: 'Kapanmış pozisyon bulunamadı',
+      previous: 'Önceki',
+      next: 'Sonraki',
+      page: 'Sayfa {current} / {total}'
     }
   }
 };

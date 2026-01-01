@@ -24,18 +24,12 @@ export default async function Home() {
     orderBy: { createdAt: 'desc' }
   })
 
-  const historyOrders = await prisma.order.findMany({
-    where: { status: { notIn: ['New', 'PartiallyFilled', 'Untriggered'] } },
-    orderBy: { updatedAt: 'desc' }
-  })
-
   return (
     <LanguageProvider>
       <Dashboard 
-        openPositions={openPositions}
-        closedPositions={closedPositions}
-        openOrders={openOrders}
-        historyOrders={historyOrders}
+        openPositions={openPositions} 
+        closedPositions={closedPositions} 
+        openOrders={openOrders} 
       />
     </LanguageProvider>
   )

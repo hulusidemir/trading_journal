@@ -8,12 +8,13 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 - **Live Position Tracking**: Automatically syncs open positions from Bybit (Linear/USDT).
 - **Real-Time Metrics**: View Entry Price, Mark Price, Liq. Price, Margin (IM/MM), and Unrealized P&L/ROI.
 - **Order Management**: Monitor active Limit, Market, and Conditional orders.
+- **Manual Sync**: "Refresh" button to instantly fetch the latest data from the exchange.
 
 ### 📝 Journaling & History
+- **Smart Note Inheritance**: Notes added to an Order are automatically carried over to the Position when filled, and preserved in History when closed.
 - **Closed Positions History**: Automatically detects closed trades and saves them to the database.
 - **Performance Analysis**: Tracks Exit Price, Realized P&L, and Close Date.
-- **Note Taking**: Add custom notes to both open and closed positions to review your strategy later.
-- **Order History**: Keep a record of all filled and cancelled orders.
+- **Pagination**: Easy navigation through large datasets with built-in pagination.
 
 ### 🌍 Localization & UI
 - **Multi-language Support**: Switch instantly between English (🇬🇧) and Turkish (🇹🇷).
@@ -21,7 +22,7 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 - **Responsive Design**: Optimized for various screen sizes.
 
 ### 🛠 Technical Highlights
-- **Auto-Sync**: Intelligent background synchronization with Bybit API.
+- **Optimized Sync**: Data synchronization is handled via Server Actions for better performance.
 - **Data Persistence**: SQLite database ensures your journal data (notes, history) is never lost, even if the exchange clears old data.
 - **Modern UI**: Clean, dark-mode interface built with Tailwind CSS.
 
@@ -74,12 +75,16 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 
 ## 🔄 How It Works
 
-1.  **Syncing**: When you load the page, the app fetches the latest data from Bybit.
+1.  **Syncing**: Click the "Refresh" button in the header to fetch the latest data from Bybit.
 2.  **Tracking**: 
     - New positions are added to the "Open Positions" table.
     - If a position is no longer found on Bybit, the app checks if it was closed.
     - If closed, it fetches the P&L data and moves it to the "Closed Positions History" table.
-3.  **Journaling**: Click the "Edit" (Pencil) icon on any row to add your thoughts, strategy notes, or lessons learned.
+3.  **Journaling**: 
+    - Add notes to your **Open Orders**.
+    - When the order fills, the note automatically moves to the **Open Position**.
+    - When you close the trade, the note is archived with the **Closed Position**.
+    - You can also edit notes at any stage by clicking the pencil icon.
 
 ## 🤝 Contributing
 
