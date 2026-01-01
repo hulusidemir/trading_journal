@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "NODE_OPTIONS='--no-deprecation' next dev",
-    "build": "node scripts/switch-db.js postgres && prisma generate && DB_ADAPTER=postgres next build",
+    "build": "node scripts/switch-db.js postgres && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "db:sqlite": "node scripts/switch-db.js sqlite && prisma generate",
