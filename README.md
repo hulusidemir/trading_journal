@@ -33,7 +33,7 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Database**: [SQLite](https://www.sqlite.org/) with [Prisma ORM](https://www.prisma.io/)
+- **Database**: [SQLite](https://www.sqlite.org/) (Default) / [PostgreSQL](https://www.postgresql.org/) (Production) with [Prisma ORM](https://www.prisma.io/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Integration**: [bybit-api](https://github.com/tiagosiebler/bybit-api)
 
@@ -64,7 +64,7 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
     BYBIT_API_SECRET="your_api_secret_here"
     ```
 
-4.  **Database Setup**
+4.  **Database Setup (Default: SQLite)**
     Initialize the SQLite database:
     ```bash
     npx prisma migrate dev --name init
@@ -75,6 +75,36 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
     npm run dev
     ```
     Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🚀 Deployment & Database Switching
+
+This project supports both **SQLite** (for local development) and **PostgreSQL** (for production/Vercel).
+
+### Switching Databases
+You can easily switch between databases using the included scripts:
+
+- **Switch to PostgreSQL**:
+  ```bash
+  npm run db:postgres
+  ```
+- **Switch to SQLite**:
+  ```bash
+  npm run db:sqlite
+  ```
+
+### Deploying to Vercel (Free)
+
+1.  **Push to GitHub**: Make sure your project is on GitHub.
+2.  **Import to Vercel**: Go to Vercel and import your repository.
+3.  **Add Database**:
+    - In Vercel, go to the **Storage** tab.
+    - Create a new **Postgres** database (Neon is recommended).
+    - Connect it to your project. Vercel will automatically add the `DATABASE_URL` environment variable.
+4.  **Deploy**:
+    - The project is configured to **automatically switch to PostgreSQL** during the Vercel build process.
+    - You don't need to manually change any files. Just push and deploy!
+
+> **Note**: When deploying, the build script runs `node scripts/switch-db.js postgres` automatically.
 
 ## 🔄 How It Works
 
