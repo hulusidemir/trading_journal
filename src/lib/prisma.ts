@@ -5,13 +5,17 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 let prisma: PrismaClient
 
-const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+// Determine if we should use PostgreSQL or SQLite based on the DATABASE_URL
+// On Vercel, DATABASE_URL will be a postgres connection string
+// Locally, it might be a file path (sqlite)
+const dbUrl = process.env.DATABASE_URL || ''
+const isPostgres = dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql') || process.env.VERCEL === '1'
 
-if (isProduction) {
-  // In production (Vercel), we use PostgreSQL which doesn't need the adapter
+if (isPostgres) {
+  // In production (Vercel) or when using Postgres, we use the standard client
   prisma = globalForPrisma.prisma || new PrismaClient()
 } else {
-  // In development (local), we use SQLite with the adapter
+  // In development (local) with SQLite, we use the adapter
   // Use require to avoid importing better-sqlite3 in production builds
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3')
@@ -27,4 +31,4 @@ if (isProduction) {
 
 export { prisma }
 
-if (!isProduction) globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
