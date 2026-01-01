@@ -3,7 +3,7 @@ console.log('Running switch-db.js script...');
 const path = require('path');
 
 const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
-const prismaLibPath = path.join(__dirname, '..', 'src', 'lib', 'prisma.ts');
+const prismaLibPath = path.join(__dirname, '..', 'src', 'lib', 'db.ts');
 const type = process.argv[2];
 
 if (!fs.existsSync(schemaPath)) {
@@ -53,7 +53,7 @@ if (type === 'postgres') {
   fs.writeFileSync(prismaLibPath, postgresPrismaTs);
   
   console.log('✔ Switched Prisma schema to PostgreSQL');
-  console.log('✔ Rewrote src/lib/prisma.ts for PostgreSQL');
+  console.log('✔ Rewrote src/lib/db.ts for PostgreSQL');
   
 } else if (type === 'sqlite') {
   // 1. Update Schema
@@ -68,7 +68,7 @@ if (type === 'postgres') {
   fs.writeFileSync(prismaLibPath, sqlitePrismaTs);
 
   console.log('✔ Switched Prisma schema to SQLite');
-  console.log('✔ Rewrote src/lib/prisma.ts for SQLite');
+  console.log('✔ Rewrote src/lib/db.ts for SQLite');
   
 } else {
   console.error('Usage: node scripts/switch-db.js [postgres|sqlite]');

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 import { syncPositions, syncOrders } from '@/lib/services'
 import Dashboard from '@/components/Dashboard'
 import { LanguageProvider } from '@/contexts/LanguageContext'
@@ -6,8 +6,9 @@ import { LanguageProvider } from '@/contexts/LanguageContext'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  // Sync data from Bybit before rendering
-  await Promise.all([syncPositions(), syncOrders()])
+  console.log('Rendering Home page...')
+  // Sync is now handled via the Refresh button or background jobs
+  // await Promise.all([syncPositions(), syncOrders()])
 
   const openPositions = await prisma.position.findMany({
     where: { status: 'OPEN' },
@@ -20,7 +21,7 @@ export default async function Home() {
   })
 
   const openOrders = await prisma.order.findMany({
-    where: { status: { in: ['New', 'PartiallyFilled', 'Untriggered'] } },
+    where: { status: { in: ['New', 'PartiallyFilled', 'Untriggered'] } }, // Adjust based on Bybit status
     orderBy: { createdAt: 'desc' }
   })
 
