@@ -88,9 +88,19 @@ export async function syncPositions() {
       limit: 50 // Fetch last 50 closed trades to catch everything
     });
 
+    // Define the start date for recording history (January 1, 2026 12:00 PM UTC)
+    // Any closed positions before this date will be ignored.
+    const HISTORY_START_DATE = new Date('2026-01-01T12:00:00Z');
+
     if (pnlResponse.retCode === 0) {
       for (const item of pnlResponse.result.list) {
         const closedAt = new Date(parseInt(item.updatedTime));
+        
+        // Skip positions closed before the start date
+        if (closedAt < HISTORY_START_DATE) {
+          continue;
+        }
+
         const side = item.side === 'Buy' ? 'LONG' : 'SHORT';
         
         // Check if this specific closed trade exists

@@ -15,6 +15,7 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 ### 📝 Journaling & History
 - **Smart Note Inheritance**: Notes added to an Order are automatically carried over to the Position when filled, and preserved in History when closed.
 - **Closed Positions History**: Automatically detects closed trades and saves them to the database.
+- **History Start Date**: Closed position history is recorded starting from **January 1, 2026, 12:00 UTC**. Data prior to this date is ignored.
 - **Performance Analysis**: Tracks Exit Price, Realized P&L, and Close Date.
 - **Pagination**: Easy navigation through large datasets with built-in pagination.
 
