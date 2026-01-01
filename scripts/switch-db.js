@@ -1,4 +1,5 @@
 const fs = require('fs');
+console.log('Running switch-db.js script...');
 const path = require('path');
 
 const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
@@ -17,7 +18,6 @@ if (type === 'postgres') {
     /datasource db \{[\s\S]*?\}/,
     `datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }`
   );
   console.log('✔ Switched Prisma schema to PostgreSQL');
@@ -27,7 +27,6 @@ if (type === 'postgres') {
     /datasource db \{[\s\S]*?\}/,
     `datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }`
   );
   console.log('✔ Switched Prisma schema to SQLite');
