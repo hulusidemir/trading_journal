@@ -5,13 +5,16 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 let prisma: PrismaClient
 
-// Determine if we should use PostgreSQL or SQLite based on the DATABASE_URL
-// On Vercel, DATABASE_URL will be a postgres connection string
-// Locally, it might be a file path (sqlite)
-const dbUrl = process.env.DATABASE_URL || ''
-const isPostgres = dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql') || process.env.VERCEL === '1'
+// Force Postgres if DB_ADAPTER env var is set (used in build script)
+// Or if we are in Vercel/Production environment
+const forcePostgres = process.env.DB_ADAPTER === 'postgres'
+const isVercel = process.env.VERCEL === '1'
+const isProduction = process.env.NODE_ENV === 'production'
+const hasPostgresUrl = (process.env.DATABASE_URL || '').startsWith('postgres')
 
-if (isPostgres) {
+const shouldUsePostgres = forcePostgres || isVercel || isProduction || hasPostgresUrl
+
+if (shouldUsePostgres) {
   // In production (Vercel) or when using Postgres, we use the standard client
   prisma = globalForPrisma.prisma || new PrismaClient()
 } else {
