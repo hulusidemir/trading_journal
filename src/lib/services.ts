@@ -82,8 +82,82 @@ export async function syncPositions() {
       }
     }
 
-    // 2. Handle Closed Positions
-    // Find positions in DB that are OPEN but not in the current Bybit list
+    // 2. Sync Recent Closed PnL (Handles both Full and Partial Closes)
+    const pnlResponse = await bybit.getClosedPnL({
+      category: 'linear',
+      limit: 50 // Fetch last 50 closed trades to catch everything
+    });
+
+    if (pnlResponse.retCode === 0) {
+      for (const item of pnlResponse.result.list) {
+        const closedAt = new Date(parseInt(item.updatedTime));
+        const side = item.side === 'Buy' ? 'LONG' : 'SHORT';
+        
+        // Check if this specific closed trade exists
+        const exists = await prisma.position.findFirst({
+          where: {
+            symbol: item.symbol,
+            side: side,
+            status: 'CLOSED',
+            closedAt: closedAt
+          }
+        });
+
+        if (!exists) {
+          // Check if there is an active OPEN position for this symbol
+          // If YES, this is a Partial Close
+          // If NO, this is likely a Full Close (or the final part of it)
+          const openPos = await prisma.position.findFirst({
+            where: {
+              symbol: item.symbol,
+              side: side,
+              status: 'OPEN'
+            }
+          });
+
+          let notes = openPos?.notes || null;
+          
+          // If it's a partial close (Open position still exists), append tag
+          if (openPos) {
+             if (notes) {
+               notes += ' (Kısmen Kapatıldı)';
+             } else {
+               notes = 'Kısmen Kapatıldı';
+             }
+          }
+
+          // Create the Closed Position record
+          await prisma.position.create({
+            data: {
+              symbol: item.symbol,
+              side: side,
+              qty: parseFloat(item.qty),
+              value: parseFloat(item.cumEntryValue),
+              entryPrice: parseFloat(item.avgEntryPrice),
+              markPrice: parseFloat(item.avgExitPrice),
+              exitPrice: parseFloat(item.avgExitPrice),
+              realizedPnl: parseFloat(item.closedPnl),
+              closedAt: closedAt,
+              status: 'CLOSED',
+              leverage: parseFloat(item.leverage),
+              isCross: true,
+              unrealizedPnl: 0,
+              unrealizedRoi: 0,
+              updatedAt: new Date(),
+              notes: notes
+            }
+          });
+        }
+      }
+    }
+
+    // 3. Cleanup Stale Open Positions
+    // If a position is OPEN in DB but not in activeSymbolSides, and we haven't just closed it via PnL logic above...
+    // Actually, the PnL logic above creates NEW records. It doesn't close the existing OPEN record.
+    // So we still need to mark the "stale" OPEN record as CLOSED or DELETE it.
+    // Since we are creating new records for every PnL event, the "stale" OPEN record is now redundant/duplicate if we keep it as "CLOSED".
+    // Ideally, we should DELETE the stale open record because its history is now fully represented by the PnL records we just synced.
+    
     const dbOpenPositions = await prisma.position.findMany({
       where: { status: 'OPEN' }
     });
@@ -91,100 +165,15 @@ export async function syncPositions() {
     for (const dbPos of dbOpenPositions) {
       const symbolSide = `${dbPos.symbol}_${dbPos.side}`;
       if (!activeSymbolSides.has(symbolSide)) {
-        // Position is no longer open, mark as CLOSED
-        // Fetch closure details from Bybit Closed PnL
-        const pnlResponse = await bybit.getClosedPnL({
-          category: 'linear',
-          symbol: dbPos.symbol,
-          limit: 1 // Get latest
+        // Position is no longer open on Bybit.
+        // We have likely already imported its closure details via PnL sync above.
+        // So we can safely remove this "tracking" record to avoid duplicates in history.
+        // OR, if we want to be safe, we check if we have a recent CLOSED record for this symbol.
+        
+        await prisma.position.delete({
+          where: { id: dbPos.id }
         });
-
-        let exitPrice = dbPos.markPrice; // Fallback
-        let closedAt = new Date();
-
-        if (pnlResponse.retCode === 0 && pnlResponse.result.list.length > 0) {
-          const lastPnl = pnlResponse.result.list[0];
-          // Verify it matches roughly
-          exitPrice = parseFloat(lastPnl.avgExitPrice);
-          closedAt = new Date(parseInt(lastPnl.updatedTime));
-          
-          await prisma.position.update({
-            where: { id: dbPos.id },
-            data: {
-              status: 'CLOSED',
-              exitPrice: exitPrice,
-              closedAt: closedAt,
-              qty: 0, // Closed
-              value: 0,
-              realizedPnl: parseFloat(lastPnl.closedPnl),
-              updatedAt: new Date()
-            }
-          });
-        } else {
-           // Fallback if PnL not found immediately
-           await prisma.position.update({
-            where: { id: dbPos.id },
-            data: {
-              status: 'CLOSED',
-              exitPrice: exitPrice,
-              closedAt: closedAt,
-              qty: 0,
-              value: 0,
-              updatedAt: new Date()
-            }
-          });
-        }
       }
-    }
-
-    // 3. Sync Historical Closed Positions (Initial Population)
-    // Only run if DB has very few closed positions to avoid spamming API
-    const closedCount = await prisma.position.count({ where: { status: 'CLOSED' } });
-    if (closedCount < 5) {
-       const historyResponse = await bybit.getClosedPnL({
-          category: 'linear',
-          limit: 20 // Fetch last 20 closed trades
-       });
-
-       if (historyResponse.retCode === 0) {
-          for (const item of historyResponse.result.list) {
-             const closedAt = new Date(parseInt(item.updatedTime));
-             
-             // Check if this specific closed trade exists
-             // Since we don't have a unique ID from Bybit for the position itself (only orderId), 
-             // we use a heuristic: same symbol, side, and close time matching exactly
-             const exists = await prisma.position.findFirst({
-                where: {
-                   symbol: item.symbol,
-                   side: item.side === 'Buy' ? 'LONG' : 'SHORT',
-                   status: 'CLOSED',
-                   closedAt: closedAt
-                }
-             });
-
-             if (!exists) {
-                await prisma.position.create({
-                   data: {
-                      symbol: item.symbol,
-                      side: item.side === 'Buy' ? 'LONG' : 'SHORT',
-                      qty: parseFloat(item.qty),
-                      value: parseFloat(item.cumEntryValue), // Approx
-                      entryPrice: parseFloat(item.avgEntryPrice),
-                      markPrice: parseFloat(item.avgExitPrice), // Use exit as mark for closed
-                      exitPrice: parseFloat(item.avgExitPrice),
-                      realizedPnl: parseFloat(item.closedPnl),
-                      closedAt: closedAt,
-                      status: 'CLOSED',
-                      leverage: parseFloat(item.leverage),
-                      isCross: true, // Default assumption if not provided
-                      unrealizedPnl: 0,
-                      unrealizedRoi: 0,
-                      updatedAt: new Date()
-                   }
-                });
-             }
-          }
-       }
     }
 
   } catch (error) {
