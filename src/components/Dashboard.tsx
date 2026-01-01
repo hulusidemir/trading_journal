@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Position, Order } from '@prisma/client'
-import { RefreshCw, DollarSign, TurkishLira } from 'lucide-react'
+import { DollarSign, TurkishLira } from 'lucide-react'
 import PositionsTable from '@/components/PositionsTable'
 import ClosedPositionsTable from '@/components/ClosedPositionsTable'
 import OrdersTable from '@/components/OrdersTable'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import ClientSync from '@/components/ClientSync'
 import { useLanguage } from '@/contexts/LanguageContext'
-
-import { refreshData } from '@/app/actions'
 
 interface DashboardProps {
   openPositions: Position[]
@@ -21,7 +20,6 @@ interface DashboardProps {
 export default function Dashboard({ openPositions, closedPositions, openOrders }: DashboardProps) {
   const { t } = useLanguage()
   const router = useRouter()
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [currency, setCurrency] = useState<'USD' | 'TRY'>('USD')
   const [exchangeRate, setExchangeRate] = useState(35)
 
@@ -36,32 +34,13 @@ export default function Dashboard({ openPositions, closedPositions, openOrders }
       .catch(err => console.error('Failed to fetch exchange rate', err))
   }, [])
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      await refreshData()
-      // Force a hard reload to ensure data is fresh
-      window.location.reload()
-    } catch (error) {
-      console.error('Refresh failed:', error)
-      setIsRefreshing(false)
-    }
-  }
-
   return (
     <main className="min-h-screen bg-gray-900 text-gray-100 p-6">
       <header className="mb-8 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-white">{t.title}</h1>
           <LanguageSwitcher />
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-all text-gray-300 hover:text-white flex items-center gap-2 border border-gray-700 hover:border-gray-600"
-            title="Sync with Bybit"
-          >
-            <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-          </button>
+          <ClientSync />
           <div className="flex bg-gray-800 rounded-lg border border-gray-700 p-1">
             <button
               onClick={() => setCurrency('USD')}
