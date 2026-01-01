@@ -5,13 +5,6 @@ import { syncPositions, syncOrders } from '@/lib/services'
 
 export async function refreshData() {
   try {
-    // Skip sync in production (Vercel) due to Bybit geo-restrictions
-    if (process.env.VERCEL) {
-      console.log('Sync skipped in production environment')
-      revalidatePath('/')
-      return { success: true, message: 'Data refreshed (sync disabled in production)' }
-    }
-    
     console.log('Starting sync...')
     await Promise.all([syncPositions(), syncOrders()])
     console.log('Sync completed. Revalidating...')
