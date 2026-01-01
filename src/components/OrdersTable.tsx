@@ -6,7 +6,15 @@ import { Pencil } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import Pagination from './Pagination'
 
-export default function OrdersTable({ initialOrders }: { initialOrders: Order[] }) {
+export default function OrdersTable({ 
+  initialOrders, 
+  currency = 'USD', 
+  rate = 1 
+}: { 
+  initialOrders: Order[], 
+  currency?: 'USD' | 'TRY', 
+  rate?: number 
+}) {
   const { t } = useLanguage()
   const [orders, setOrders] = useState(initialOrders)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -19,6 +27,18 @@ export default function OrdersTable({ initialOrders }: { initialOrders: Order[] 
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
+
+  const formatCurrency = (value: number) => {
+    const converted = currency === 'TRY' ? value * rate : value
+    return new Intl.NumberFormat(currency === 'TRY' ? 'tr-TR' : 'en-US', { 
+      style: 'currency', 
+      currency: currency 
+    }).format(converted)
+  }
+
+  const totalLong = orders.filter(o => o.side === 'Buy').reduce((sum, o) => sum + (o.price * o.qty), 0)
+  const totalShort = orders.filter(o => o.side === 'Sell').reduce((sum, o) => sum + (o.price * o.qty), 0)
+  const grandTotal = totalLong + totalShort
 
   const formatNumber = (value: number, decimals = 4) => {
     return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value)
@@ -119,6 +139,30 @@ export default function OrdersTable({ initialOrders }: { initialOrders: Order[] 
             </tr>
           ))}
         </tbody>
+        <tfoot className="bg-gray-900/50 border-t border-gray-700">
+          <tr>
+            <td colSpan={12} className="px-4 py-3">
+              <div className="flex justify-end items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">{t.table.totalLong}:</span>
+                  <span className="text-green-400 font-mono font-medium">{formatCurrency(totalLong)}</span>
+                </div>
+                <span className="text-gray-700">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">{t.table.totalShort}:</span>
+                  <span className="text-red-400 font-mono font-medium">{formatCurrency(totalShort)}</span>
+                </div>
+                <span className="text-gray-700">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-300 font-semibold">{t.table.grandTotal}:</span>
+                  <span className={`font-mono font-bold ${grandTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {formatCurrency(grandTotal)}
+                  </span>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
       </table>
       <Pagination 
         currentPage={currentPage} 

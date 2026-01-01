@@ -5,7 +5,15 @@ import { Position } from '@prisma/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import Pagination from './Pagination'
 
-export default function PositionsTable({ initialPositions }: { initialPositions: Position[] }) {
+export default function PositionsTable({ 
+  initialPositions, 
+  currency = 'USD', 
+  rate = 1 
+}: { 
+  initialPositions: Position[], 
+  currency?: 'USD' | 'TRY', 
+  rate?: number 
+}) {
   const { t } = useLanguage()
   const [positions] = useState(initialPositions)
   const [currentPage, setCurrentPage] = useState(1)
@@ -18,8 +26,16 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
   )
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+    const converted = currency === 'TRY' ? value * rate : value
+    return new Intl.NumberFormat(currency === 'TRY' ? 'tr-TR' : 'en-US', { 
+      style: 'currency', 
+      currency: currency 
+    }).format(converted)
   }
+
+  const totalLong = positions.filter(p => p.side === 'LONG').reduce((sum, p) => sum + p.value, 0)
+  const totalShort = positions.filter(p => p.side === 'SHORT').reduce((sum, p) => sum + p.value, 0)
+  const grandTotal = totalLong + totalShort
 
   const formatNumber = (value: number, decimals = 4) => {
     return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value)
@@ -70,14 +86,14 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
               <td className="px-4 py-3 text-orange-400">{position.liqPrice ? formatNumber(position.liqPrice) : '--'}</td>
               <td className="px-4 py-3">
                 <div className="flex flex-col">
-                  <span>{formatNumber(position.im || 0, 2)}</span>
-                  <span className="text-xs text-gray-500">{formatNumber(position.mm || 0, 2)}</span>
+                  <span>{formatCurrency(position.im || 0)}</span>
+                  <span className="text-xs text-gray-500">{formatCurrency(position.mm || 0)}</span>
                 </div>
               </td>
               <td className="px-4 py-3">
                 <div className="flex flex-col">
                   <span className={position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}>
-                    {formatNumber(position.unrealizedPnl, 2)} USDT
+                    {formatCurrency(position.unrealizedPnl)}
                   </span>
                   <span className={`text-xs ${position.unrealizedRoi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     ({position.unrealizedRoi.toFixed(2)}%)
@@ -96,6 +112,30 @@ export default function PositionsTable({ initialPositions }: { initialPositions:
             </tr>
           ))}
         </tbody>
+        <tfoot className="bg-gray-900/50 border-t border-gray-700">
+          <tr>
+            <td colSpan={11} className="px-4 py-3">
+              <div className="flex justify-end items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">{t.table.totalLong}:</span>
+                  <span className="text-green-400 font-mono font-medium">{formatCurrency(totalLong)}</span>
+                </div>
+                <span className="text-gray-700">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">{t.table.totalShort}:</span>
+                  <span className="text-red-400 font-mono font-medium">{formatCurrency(totalShort)}</span>
+                </div>
+                <span className="text-gray-700">|</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-300 font-semibold">{t.table.grandTotal}:</span>
+                  <span className={`font-mono font-bold ${grandTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {formatCurrency(grandTotal)}
+                  </span>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
       </table>
       <Pagination 
         currentPage={currentPage} 

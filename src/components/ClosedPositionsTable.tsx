@@ -6,7 +6,13 @@ import { Pencil } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import Pagination from './Pagination'
 
-export default function ClosedPositionsTable({ initialPositions }: { initialPositions: Position[] }) {
+interface ClosedPositionsTableProps {
+  initialPositions: Position[]
+  currency?: 'USD' | 'TRY'
+  rate?: number
+}
+
+export default function ClosedPositionsTable({ initialPositions, currency = 'USD', rate = 1 }: ClosedPositionsTableProps) {
   const { t } = useLanguage()
   const [positions, setPositions] = useState(initialPositions)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -21,7 +27,11 @@ export default function ClosedPositionsTable({ initialPositions }: { initialPosi
   )
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+    const convertedValue = currency === 'TRY' ? value * rate : value
+    return new Intl.NumberFormat(currency === 'TRY' ? 'tr-TR' : 'en-US', { 
+      style: 'currency', 
+      currency: currency 
+    }).format(convertedValue)
   }
 
   const formatNumber = (value: number, decimals = 4) => {
@@ -49,6 +59,8 @@ export default function ClosedPositionsTable({ initialPositions }: { initialPosi
       console.error('Failed to save note', error)
     }
   }
+
+  const totalPnL = positions.reduce((sum, p) => sum + (p.realizedPnl || 0), 0)
 
   return (
     <div className="overflow-x-auto bg-gray-800 rounded-lg shadow">
@@ -123,6 +135,18 @@ export default function ClosedPositionsTable({ initialPositions }: { initialPosi
             </tr>
           )}
         </tbody>
+        <tfoot className="bg-gray-800/50 border-t border-gray-700">
+          <tr>
+            <td colSpan={7} className="px-4 py-3">
+              <div className="flex justify-end items-center gap-2 text-sm">
+                <span className="text-gray-300 font-semibold">{t.table.grandTotal}:</span>
+                <span className={`font-mono font-bold ${totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {formatCurrency(totalPnL)}
+                </span>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
       </table>
       <Pagination 
         currentPage={currentPage} 

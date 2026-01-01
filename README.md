@@ -6,6 +6,8 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
 
 ### 📊 Real-Time Dashboard
 - **Live Position Tracking**: Automatically syncs open positions from Bybit (Linear/USDT).
+- **Financial Summaries**: Real-time calculation of Total Long, Total Short, and Grand Total exposure.
+- **Currency Conversion**: Toggle between USD ($) and TRY (₺) with live exchange rates.
 - **Real-Time Metrics**: View Entry Price, Mark Price, Liq. Price, Margin (IM/MM), and Unrealized P&L/ROI.
 - **Order Management**: Monitor active Limit, Market, and Conditional orders.
 - **Manual Sync**: "Refresh" button to instantly fetch the latest data from the exchange.

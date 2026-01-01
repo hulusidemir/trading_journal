@@ -37,7 +37,10 @@ export const translations = {
       noClosedPositions: 'No closed positions found',
       previous: 'Previous',
       next: 'Next',
-      page: 'Page {current} of {total}'
+      page: 'Page {current} of {total}',
+      totalLong: 'Total Long',
+      totalShort: 'Total Short',
+      grandTotal: 'Grand Total'
     }
   },
   tr: {
@@ -76,7 +79,10 @@ export const translations = {
       noClosedPositions: 'Kapanmış pozisyon bulunamadı',
       previous: 'Önceki',
       next: 'Sonraki',
-      page: 'Sayfa {current} / {total}'
+      page: 'Sayfa {current} / {total}',
+      totalLong: 'Toplam Long',
+      totalShort: 'Toplam Short',
+      grandTotal: 'Genel Toplam'
     }
   }
 };
