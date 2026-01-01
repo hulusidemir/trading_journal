@@ -81,10 +81,10 @@ A powerful, real-time trading journal application built with **Next.js 16**, **P
     - If a position is no longer found on Bybit, the app checks if it was closed.
     - If closed, it fetches the P&L data and moves it to the "Closed Positions History" table.
 3.  **Journaling**: 
-    - Add notes to your **Open Orders**.
-    - When the order fills, the note automatically moves to the **Open Position**.
+    - Add notes to your **Open Orders** (Entry Note).
+    - When the order fills, the note automatically moves to the **Open Position** (Read-only).
     - When you close the trade, the note is archived with the **Closed Position**.
-    - You can also edit notes at any stage by clicking the pencil icon.
+    - You can edit the note in **Closed Positions** to add closing remarks or lessons learned.
 
 ## 🤝 Contributing
 
