@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export default async function Home() {
   console.log('Rendering Home page...')
   // Sync is now handled via the Refresh button or background jobs
-  // await Promise.all([syncPositions(), syncOrders()])
+  await Promise.all([syncPositions(), syncOrders()])
 
   const openPositions = await prisma.position.findMany({
     where: { status: 'OPEN' },
