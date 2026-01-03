@@ -24,7 +24,15 @@ export default function OrdersTable({
   const itemsPerPage = 10
 
   const totalPages = Math.ceil(orders.length / itemsPerPage)
-  const currentOrders = orders.slice(
+  
+  const sortedOrders = [...orders].sort((a, b) => {
+    if (a.isReduceOnly === b.isReduceOnly) {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    }
+    return a.isReduceOnly ? 1 : -1
+  })
+
+  const currentOrders = sortedOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
@@ -86,7 +94,7 @@ export default function OrdersTable({
         </thead>
         <tbody>
           {currentOrders.map((order) => (
-            <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-700 transition-colors duration-150">
+            <tr key={order.id} className={`border-b border-gray-700 hover:bg-gray-700 transition-colors duration-150 ${order.isReduceOnly ? 'opacity-50' : ''}`}>
               <td className="px-4 py-3 text-gray-400">{formatDate(order.createdAt)}</td>
               <td className="px-4 py-3 font-medium text-white">{order.symbol}</td>
               <td className="px-4 py-3">{order.type}</td>
