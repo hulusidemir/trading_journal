@@ -8,6 +8,7 @@ export function getBybitClient(): RestClientV5 {
       key: process.env.BYBIT_API_KEY,
       secret: process.env.BYBIT_API_SECRET,
       testnet: false,
+      recv_window: 20000,
     });
   }
   return bybitInstance;
